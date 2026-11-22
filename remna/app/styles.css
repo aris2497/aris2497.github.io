@@ -289,3 +289,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--safe
 .fgroup-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
 .fgroup-head h3 { margin: 0; }
 .text-btn.small { font-size: 13.5px; padding: 4px 0; }
+
+/* --- Więcej: wyłącznik statystyk, przycisk uwag --- */
+.setting.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.setting.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+#feedback { display: inline-flex; text-decoration: none; color: inherit; }

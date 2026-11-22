@@ -8,8 +8,14 @@
   const $ = (sel) => document.querySelector(sel);
   const storage = (() => { try { localStorage.setItem('remna-test', '1'); localStorage.removeItem('remna-test'); return localStorage; } catch (e) { const m = {}; return { getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, removeItem: (k) => { delete m[k]; } }; } })();
 
-  const source = window.RemnaData.makeSource(window.REMNA_CONFIG, { Remna: R, fetch: window.fetch.bind(window) });
+  const source = window.RemnaData.makeSource(window.REMNA_CONFIG, {
+    Remna: R, fetch: window.fetch.bind(window), platform: N.isNative ? 'android' : 'web', lang: () => I.getLang(),
+  });
   const favorites = R.makeFavorites(storage);
+  // Statystyki: wyłącznik w „Więcej” (zapamiętany) i „Nie śledź” w przeglądarce
+  const dnt = navigator.doNotTrack === '1' || window.doNotTrack === '1';
+  const statsAllowed = () => !dnt && storage.getItem('remna-statystyki') !== 'nie';
+  source.setStatsCheck(statsAllowed);
   const alerts = R.makeAlerts(storage);
 
   const state = {
@@ -144,6 +150,9 @@
     try {
       const res = await source.search(state.filters, state.page);
       if (seq !== state.seq) return;
+      if (reset && (state.filters.q || R.countActive(state.filters))) {
+        source.track('search', { query: state.filters.q || null, detail: 'wyniki ' + (res.total == null ? '?' : res.total) + '; filtry ' + R.countActive(state.filters) });
+      }
       state.items = reset ? res.items : state.items.concat(res.items);
       state.total = res.total;
       state.approx = res.approx && res.total != null && res.total > 1000;
@@ -259,6 +268,7 @@
 
   function toggleFavorite(p) {
     const on = favorites.toggle(p);
+    if (on) source.track('fav_add', { product_id: p.id, shop_id: p.shop_id });
     document.querySelectorAll(`[data-fav="${CSS.escape(p.id)}"]`).forEach((b) => b.setAttribute('aria-pressed', on));
     if (state.detailId === p.id) $('#detail-fav').setAttribute('aria-pressed', on);
     toast(t(on ? 'toast.favAdded' : 'toast.favRemoved'));
@@ -305,6 +315,7 @@
   }
   async function openDetail(id) {
     const quick = state.items.find((x) => x.id === id) || favorites.list().find((x) => x.id === id);
+    source.track('detail', { product_id: id, shop_id: id.split(':')[0] });
     state.detailId = id;
     detailProduct = quick || null;
     if (quick) { renderDetail(quick); verifyLive(quick); }
@@ -344,6 +355,7 @@
     const missing = `<span class="missing">${esc(t('detail.unknown'))}</span>`;
     const rows = [
       [t('detail.composition'), comp ? esc(comp) : (p.kind === 'leather' ? esc(t('detail.leather')) : missing)],
+      [t('detail.pattern'), p.pattern ? esc(t(p.pattern === 'plain' ? 'detail.patternPlain' : 'detail.patternPatterned')) : missing],
       [t('detail.width'), p.width_cm ? esc(Math.round(p.width_cm) + ' cm') : missing],
       [t('detail.weight'), p.weight_gsm ? esc(Math.round(p.weight_gsm) + ' g/m²') : missing],
       [t('detail.stock'), p.stock_m != null ? esc(t('detail.stockValue', Number(p.stock_m))) : (p.kind === 'leather' ? esc(t('detail.stockLeather')) : missing)],
@@ -378,7 +390,10 @@
   $('#detail-fav').addEventListener('click', () => { if (detailProduct) toggleFavorite(slim(detailProduct)); });
   $('#detail-open').addEventListener('click', (e) => {
     e.preventDefault();
-    if (detailProduct) N.openExternal(detailProduct.url);
+    if (detailProduct) {
+      source.track('shop_click', { product_id: detailProduct.id, shop_id: detailProduct.shop_id });
+      N.openExternal(detailProduct.url);
+    }
   });
 
   // --- Arkusz filtrów -----------------------------------------------------------
@@ -417,6 +432,12 @@
       R.MIN_STOCK_STEPS.map((v) => chip('stock', v, t('filters.fromStock', v), f.minStock === v)).join('') +
       `</div><div class="chips">` + chip('stockknown', '1', t('filters.stockKnown'), f.stockKnown) +
       `</div><p class="hint">${esc(t('filters.stockNote'))}</p></div>`);
+    // Wzór: jednolite / wzorzyste
+    html.push(`<div class="fgroup"><h3>${esc(t('filters.pattern'))}</h3><div class="chips">` +
+      chip('pattern', '', t('filters.patternAny'), !f.pattern) +
+      chip('pattern', 'plain', t('filters.patternPlain'), f.pattern === 'plain') +
+      chip('pattern', 'patterned', t('filters.patternPatterned'), f.pattern === 'patterned') +
+      `</div><p class="hint">${esc(t('filters.patternNote'))}</p></div>`);
     html.push(`<div class="fgroup">${groupHead('filters.colors', 'colors', R.COLORS.map((c) => c.id), f.colors)}<div class="chips">` +
       R.COLORS.map((c) => chip('color', c.id, c[I.getLang()], f.colors.includes(c.id), `<span class="dot" style="background:${c.hex}"></span>`)).join('') + '</div></div>');
     html.push(`<div class="fgroup"><h3>${esc(t('filters.maxPrice'))}</h3><div class="chips">` +
@@ -471,6 +492,7 @@
     else if ('purity' in b.dataset) f.purity = b.dataset.purity ? Number(b.dataset.purity) : null;
     else if (b.dataset.nosynth) f.noSynthetic = !f.noSynthetic;
     else if ('stock' in b.dataset) f.minStock = b.dataset.stock ? Number(b.dataset.stock) : null;
+    else if ('pattern' in b.dataset) f.pattern = b.dataset.pattern || null;
     else if (b.dataset.stockknown) f.stockKnown = !f.stockKnown;
     else if (b.dataset.color) f.colors = toggle(f.colors, b.dataset.color);
     else if ('price' in b.dataset) f.maxPrice = b.dataset.price ? Number(b.dataset.price) : null;
@@ -517,6 +539,7 @@
     const a = alerts.add(R.describeFilters(f, I.getLang(), shopsById()), f);
     if (!a) { toast(t('alerts.limit', R.MAX_ALERTS)); return; }
     toast(t('alerts.saved'));
+    source.track('alert_save', { query: f.q || null, detail: R.describeFilters(f, 'en', shopsById()) });
     renderAlertsBadge();
   });
 
@@ -618,8 +641,17 @@
     $('#shop-list').innerHTML = shops.map((s) => `<li><span>${esc(s.name)}</span><span class="c">${esc(s.country ? countryName(s.country) : '')}${s.product_count ? ' · ' + esc(t('more.offers', s.product_count)) : ''}</span></li>`).join('');
     const cfg = window.REMNA_CONFIG;
     $('#contact').textContent = cfg.contactEmail || '';
+    // Zgłoś uwagę: e-mail z wersją i platformą (ułatwia szukanie błędów)
+    const body = t('more.feedbackBody', cfg.version, N.isNative ? 'Android' : 'web');
+    $('#feedback').href = 'mailto:' + (cfg.contactEmail || '') + '?subject=' + encodeURIComponent(t('more.feedbackSubject')) + '&body=' + encodeURIComponent(body);
+    $('#stats-toggle').checked = statsAllowed();
+    $('#stats-toggle').disabled = dnt;
+    $('#stats-note').textContent = dnt ? t('more.statsDnt') : t('more.statsText');
     $('#version').textContent = t('more.version', cfg.version) + (source.updatedAt ? ' · ' + t('more.updated', fmtDate(source.updatedAt)) : '');
   }
+  $('#stats-toggle').addEventListener('change', (e) => {
+    storage.setItem('remna-statystyki', e.target.checked ? 'tak' : 'nie');
+  });
   $('#lang').addEventListener('change', (e) => {
     I.setLang(e.target.value);
     storage.setItem('remna-jezyk', I.getLang());
@@ -737,6 +769,7 @@
     renderResults();
     try {
       await source.init();
+      source.track('open');
     } catch (e) {
       state.loading = false;
       state.error = true;

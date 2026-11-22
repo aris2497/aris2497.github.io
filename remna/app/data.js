@@ -207,8 +207,31 @@
       }
     }
 
+    // Anonimowe statystyki: bez identyfikatora osoby i bez ciasteczek. „session” = losowe na jedno otwarcie aplikacji
+    // (tylko w pamięci), żeby liczyć wizyty, a nie ludzi. Wyłączane w ustawieniach i przy „Nie śledź” w przeglądarce.
+    const session = Math.random().toString(36).slice(2, 12);
+    let statsOn = () => true;
+    function setStatsCheck(fn) { statsOn = fn; }
+    function track(name, extra) {
+      if (mode !== 'live' || !statsOn()) return;
+      const cut = (v, n) => (v == null ? null : String(v).slice(0, n));
+      const e = extra || {};
+      const row = {
+        name, session, platform: deps.platform || 'web', lang: cut(deps.lang && deps.lang(), 5),
+        shop_id: cut(e.shop_id, 40), product_id: cut(e.product_id, 80), query: cut(e.query, 80), detail: cut(e.detail, 120),
+      };
+      try {
+        fetchFn(base + '/events', {
+          method: 'POST',
+          headers: Object.assign({}, headers, { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+          body: JSON.stringify(row),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (err) { /* statystyki nigdy nie psują aplikacji */ }
+    }
+
     return {
-      init, search, countNew, byIds, details, checkLive,
+      init, search, countNew, byIds, details, checkLive, track, setStatsCheck,
       get mode() { return mode; },
       get reason() { return reason; },
       get shops() { return shops; },

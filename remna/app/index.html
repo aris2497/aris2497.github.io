@@ -16,7 +16,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Remna">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="stylesheet" href="styles.css?v=ef5fc80">
+  <link rel="stylesheet" href="styles.css?v=0e3702c">
 </head>
 <body>
   <div id="app">
@@ -94,8 +94,16 @@
         <ul class="shop-list" id="shop-list"></ul>
         <h2 data-i18n="more.about"></h2>
         <p data-i18n="more.aboutText"></p>
+        <h2 data-i18n="more.feedback"></h2>
+        <p data-i18n="more.feedbackText"></p>
+        <p><a class="ghost-btn" id="feedback" href="#" data-i18n="more.feedbackButton"></a></p>
         <h2 data-i18n="more.privacy"></h2>
         <p data-i18n="more.privacyText"></p>
+        <label class="setting toggle">
+          <span data-i18n="more.stats"></span>
+          <input type="checkbox" id="stats-toggle">
+        </label>
+        <p class="note" id="stats-note"></p>
         <h2 data-i18n="more.shopOwner"></h2>
         <p><span data-i18n="more.shopOwnerText"></span> <span class="contact" id="contact"></span></p>
         <p class="note" id="version"></p>
@@ -153,11 +161,11 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
-  <script src="config.js?v=ef5fc80"></script>
-  <script src="i18n.js?v=ef5fc80"></script>
-  <script src="filters.js?v=ef5fc80"></script>
-  <script src="data.js?v=ef5fc80"></script>
-  <script src="native.js?v=ef5fc80"></script>
-  <script src="app.js?v=ef5fc80"></script>
+  <script src="config.js?v=0e3702c"></script>
+  <script src="i18n.js?v=0e3702c"></script>
+  <script src="filters.js?v=0e3702c"></script>
+  <script src="data.js?v=0e3702c"></script>
+  <script src="native.js?v=0e3702c"></script>
+  <script src="app.js?v=0e3702c"></script>
 </body>
 </html>
