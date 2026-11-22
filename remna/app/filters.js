@@ -282,7 +282,7 @@
     if (n.noSynthetic) p.push(['synthetic_pct', 'lte.' + MAX_SYNTHETIC_PCT]);
     if (n.stockKnown) p.push(['stock_m', 'gte.' + (n.minStock || 0.01)]);
     else if (n.minStock) p.push(['or', '(stock_m.is.null,stock_m.gte.' + n.minStock + ')']);
-    if (n.colors.length) p.push(['colors', 'ov.{' + n.colors.join(',') + '}']);
+    if (n.colors.length) p.push(['colors', 'ov.{' + colorsWithNear(n.colors).join(',') + '}']);
     if (n.pattern) p.push(['pattern', 'eq.' + n.pattern]);
     if (n.weight) {
       const [lo, hi] = WEIGHT_RANGES[n.weight];
@@ -339,7 +339,7 @@
     const stock = p.stock_m == null ? null : Number(p.stock_m);
     if (n.stockKnown && stock == null) return false;
     if (n.minStock && stock != null && stock < n.minStock) return false;
-    if (n.colors.length && !(p.colors || []).some((x) => n.colors.includes(x))) return false;
+    if (n.colors.length && !(p.colors || []).some((x) => colorsWithNear(n.colors).includes(x))) return false;
     if (n.pattern && p.pattern !== n.pattern) return false;
     if (n.weight) {
       const [lo, hi] = WEIGHT_RANGES[n.weight];
@@ -421,6 +421,14 @@
     }
     if (p.fibers && p.fibers.length) return p.fibers.map((k) => names[k] || k).join(', ');
     return '';
+  }
+
+  // Jasne neutralne kolory przechodzą jeden w drugi (granica zależy od sklepu i zdjęcia), więc szukamy też sąsiada
+  const COLOR_NEAR = { white: ['cream'], cream: ['white', 'beige'], beige: ['cream'] };
+  function colorsWithNear(ids) {
+    const out = new Set(ids);
+    for (const id of ids) for (const x of COLOR_NEAR[id] || []) out.add(x);
+    return [...out].sort();
   }
 
   /** Filtry jako parametry adresu (tylko różne od domyślnych), np. ?q=sztruks&colors=brown&pattern=plain */
@@ -606,7 +614,7 @@
 
   const api = {
     FIBERS, COLORS, MAX_PRICE_STEPS, MIN_WIDTH_STEPS, SORTS, PAGE_SIZE, LIST_FIELDS,
-    PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS, WEIGHT_RANGES,
+    PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS, WEIGHT_RANGES, colorsWithNear,
     defaultFilters, normalizeFilters, countActive, filtersKey, searchWords, tsQuery, termGroup, titleMatches,
     restParams, toQueryString, allowedShops, matchLocal, sortLocal,
     money, priceParts, compositionText, imageUrl, displayTitle, filtersToParams, filtersFromParams,

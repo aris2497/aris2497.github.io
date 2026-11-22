@@ -493,7 +493,8 @@
       chip('pattern', 'patterned', t('filters.patternPatterned'), f.pattern === 'patterned') +
       `</div><p class="hint">${esc(t('filters.patternNote'))}</p></div>`);
     html.push(`<div class="fgroup">${groupHead('filters.colors', 'colors', R.COLORS.map((c) => c.id), f.colors)}<div class="chips">` +
-      R.COLORS.map((c) => chip('color', c.id, c[I.getLang()] || c.en, f.colors.includes(c.id), `<span class="dot" style="background:${c.hex}"></span>`)).join('') + '</div></div>');
+      R.COLORS.map((c) => chip('color', c.id, c[I.getLang()] || c.en, f.colors.includes(c.id), `<span class="dot" style="background:${c.hex}"></span>`)).join('') +
+      `</div><p class="hint">${esc(t('filters.colorsNote'))}</p></div>`);
     html.push(`<div class="fgroup"><h3>${esc(t('filters.maxPrice'))}</h3><div class="chips">` +
       chip('price', '', t('filters.any'), !f.maxPrice) +
       R.MAX_PRICE_STEPS.map((v) => chip('price', v, t('filters.upTo', v), f.maxPrice === v)).join('') +
