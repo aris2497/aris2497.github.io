@@ -22,6 +22,7 @@
       if (!r.ok) {
         const err = new Error('HTTP ' + r.status);
         err.status = r.status;
+        err.headers = r.headers;
         throw err;
       }
       return { body: await r.json(), headers: r.headers };
@@ -77,8 +78,57 @@
       return total && total !== '*' ? Number(total) : null;
     }
 
+    /**
+     * Przy wpisanym tekście i kolejności „najnowsze”: najpierw oferty ze słowem w nazwie, potem reszta.
+     * Dwie listy z bazy sklejone w jedną (strony liczone przez obie).
+     */
+    async function searchTiered(filters, page) {
+      const n = R.normalizeFilters(filters);
+      const start = (page || 0) * R.PAGE_SIZE;
+      const base = (title, offset, limit, select) => R.restParams(filters, Object.assign({ page: 0, shopsByCountry }, title ? { title } : {}, select ? { select } : {}))
+        .filter(([k]) => k !== 'limit' && k !== 'offset')
+        .concat([['limit', String(limit)], ['offset', String(offset)]]);
+      const count = { Prefer: 'count=exact' };
+      // Liczba wszystkich trafień (szybki indeks wyszukiwania); „pozostałe” = wszystkie − trafienia w nazwie
+      // 416 = strona za końcem trafień w nazwie: pusta lista (liczba trafień jest w nagłówku)
+      const pageA = getJson('/products?' + R.toQueryString(base('only', start, R.PAGE_SIZE)), count)
+        .catch((e) => { if (e.status === 416) return { body: [], headers: e.headers }; throw e; });
+      const [a, all] = await Promise.all([
+        pageA,
+        getJson('/products?' + R.toQueryString(base(undefined, 0, 1, 'id')), count),
+      ]);
+      const totalA = parseTotal(a.headers);
+      const totalAll = parseTotal(all.headers);
+      const totalB = totalA != null && totalAll != null ? Math.max(0, totalAll - totalA) : null;
+      let items = a.body;
+      if (items.length < R.PAGE_SIZE && totalA != null && totalB) {
+        const need = R.PAGE_SIZE - items.length;
+        const b = await getJson('/products?' + R.toQueryString(base('exclude', Math.max(0, start - totalA), need)));
+        items = items.concat(b.body);
+      }
+      return { items, total: totalA != null && totalB != null ? totalA + totalB : null, approx: false, tiered: !!n.q };
+    }
+
+    // Którą kolejność wybrała pierwsza strona danego wyszukiwania (żeby dalsze strony jej nie zmieniały)
+    const tieredFor = new Map();
+
     /** Wyniki wyszukiwania: {items, total, approx}. */
     async function search(filters, page, since) {
+      const nf = R.normalizeFilters(filters);
+      const key = R.filtersKey(filters) + '|' + nf.sort;
+      const wantTiered = mode === 'live' && R.tsQuery(nf.q) && nf.sort === 'newest' && !since;
+      if (wantTiered && (!page || tieredFor.get(key) !== false)) {
+        try {
+          const res = await searchTiered(filters, page);
+          if (!page) tieredFor.set(key, true);
+          return res;
+        } catch (e) {
+          if (!e.status) throw e;
+          // Dalsze strony: jedna ponowna próba, bez zmiany kolejności w połowie listy (to dawało powtórki)
+          if (page) return await searchTiered(filters, page);
+          tieredFor.set(key, false);   // pierwsza strona: zwykła kolejność niżej, także dla dalszych stron
+        }
+      }
       if (mode === 'live') {
         const qs = R.toQueryString(R.restParams(filters, { page: page || 0, shopsByCountry, since }));
         try {
@@ -92,7 +142,10 @@
         }
       }
       const all = demo.products.filter((p) => R.matchLocal(p, filters, { shopsByCountry, since }));
-      const sorted = R.sortLocal(all, R.normalizeFilters(filters).sort);
+      let sorted = R.sortLocal(all, nf.sort);
+      if (nf.q && nf.sort === 'newest') {
+        sorted = sorted.filter((p) => R.titleMatches(p, nf.q)).concat(sorted.filter((p) => !R.titleMatches(p, nf.q)));
+      }
       const start = (page || 0) * R.PAGE_SIZE;
       return { items: sorted.slice(start, start + R.PAGE_SIZE), total: sorted.length, approx: false };
     }

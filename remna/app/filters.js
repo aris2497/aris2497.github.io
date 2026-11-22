@@ -122,17 +122,134 @@
     return map;
   })();
 
+
+  // Rodzaje tkanin i wzory w wielu językach: wpisanie dowolnego słowa z grupy szuka wszystkich naraz
+  // (PL, EN, FR, IT, DE, NL, ES, PT). „=słowo” = tylko całe słowo (krótkie, łatwo o fałszywe trafienia);
+  // kilka słów = wyrażenie (słowa obok siebie), np. „velours côtelé” (samo „côtelé” to też dzianina w prążek).
+  const TERM_GROUPS = [
+    ['sztruks', 'corduroy', 'velours côtelé', 'velours cotele', 'milleraies', 'mille raies', '1000 raies', 'velluto a coste', 'millerighe', 'cordsamt', 'feincord', 'babycord', 'needlecord', 'ribfluweel', 'bombazina'],
+    ['aksamit', 'welur', 'velvet', 'velours', 'velluto', 'samt', 'fluweel', 'terciopelo', 'veludo'],
+    ['plusz', 'plush', 'peluche', 'plüsch', 'pluche', 'minky'],
+    ['dżins', 'dzins', 'jeans', 'denim'],
+    ['tiul', 'tulle', 'tüll', 'tule'],
+    ['koronka', 'koronkowy', 'lace', 'dentelle', 'pizzo', 'spitze', '=kant', 'encaje', 'renda', 'guipure', 'gipiura'],
+    ['szyfon', 'chiffon', 'mousseline', 'chifón'],
+    ['krepa', 'crepe', 'crêpe', 'crespo', 'krepp', 'crep'],
+    ['satyna', 'satin', 'raso', 'satijn', 'cetim', 'charmeuse'],
+    ['tafta', 'taffeta', 'taffetas', 'taft', 'tafetán', 'tafetá'],
+    ['organza', 'organdi', 'organdy'],
+    ['żakard', 'zakard', 'jacquard'],
+    ['tweed'],
+    ['flanela', 'flannel', 'flanelle', 'flanella', 'flanell', 'franela'],
+    ['dzianina', 'jersey', 'knit', 'maille', 'tricot', 'maglia', 'strick', 'tricô', 'punto'],
+    ['popelina', 'poplin', 'popeline', 'popelin', 'popelín'],
+    ['gabardyna', 'gabardine', 'gabardina'],
+    ['muślin', 'muslin', 'mussola', 'musselin', 'muselina'],
+    ['batyst', 'batiste', 'batista', 'cambric'],
+    ['płótno', 'plotno', 'canvas', 'toile', '=tela', 'leinwand', 'lona'],
+    ['diagonal', 'twill', 'sergé', 'serge', 'saia', 'köper', 'keper', 'sarga'],
+    ['boucle', 'bouclé'],
+    ['frotte', 'frotté', 'terry', 'éponge', 'eponge', 'spugna', 'frottee', 'badstof', 'rizo', 'atoalhado'],
+    ['polar', 'fleece', 'polaire', 'fleecestoff'],
+    ['podszewka', 'lining', 'doublure', 'fodera', 'futter', 'voering', 'forro'],
+    ['filc', 'felt', 'feutre', 'feltro', 'filz', 'vilt', 'fieltro'],
+    ['zamsz', 'suede', 'suède', 'daim', 'scamosciato', 'wildleder', 'camurça'],
+    ['brokat', 'brocade', 'brocart', 'broccato', 'brokaat', 'brocado'],
+    ['gaza', 'gauze', '=gaze', 'garza', 'gasa'],
+    ['cekiny', 'sequin', 'paillette', 'paillettes', 'paillettato', 'pailletten', 'lentejuelas'],
+    ['loden'],
+    ['softshell'],
+    ['neopren', 'neoprene', 'néoprène', 'scuba'],
+    ['kratka', 'krata', 'check', 'tartan', 'carreaux', 'quadri', 'quadretti', '=karo', 'kariert', 'ruit', 'cuadros', 'xadrez', 'plaid', 'vichy', 'gingham'],
+    ['paski', 'paseczki', 'stripe', 'stripes', 'rayure', 'rayures', 'righe', 'rigato', 'streifen', 'streep', 'rayas', 'riscas', 'pinstripe', 'gessato'],
+    ['kwiaty', 'kwiatowy', 'kwiatki', 'floral', 'flower', 'fleurs', 'fleuri', 'fiori', 'floreale', 'blumen', 'bloemen', 'flores'],
+    ['kropki', 'groszki', 'grochy', 'dots', 'polka', '=pois', 'punkte', 'stippen', 'lunares', 'bolinhas'],
+    ['pepitka', 'houndstooth', 'pied-de-poule', 'pepita', 'hahnentritt'],
+    ['jodełka', 'jodelka', 'herringbone', 'chevron', 'spina', 'fischgrat', 'visgraat', 'espiga'],
+    ['haft', 'haftowany', 'embroidered', 'embroidery', 'brodé', 'broderie', 'ricamato', 'ricamo', 'bestickt', 'geborduurd', 'bordado'],
+    ['nadruk', 'drukowany', 'printed', 'imprimé', 'stampato', 'stampa', 'bedruckt', 'bedrukt', 'estampado'],
+    ['siatka', 'mesh', 'filet', 'netz', 'malla'],
+    ['wodoodporny', 'waterproof', 'imperméable', 'impermeabile', 'wasserdicht', 'waterdicht', 'impermeable'],
+  ];
+  const GROUP_OF = (() => {
+    const m = new Map();
+    TERM_GROUPS.forEach((g, i) => g.forEach((t) => m.set(t.replace(/^=/, ''), i)));
+    return m;
+  })();
+  /** Grupa słów dla wpisanego słowa: dokładnie albo z polską/obcą końcówką (np. „sztruksowa”, „velvets”). */
+  function termGroup(word) {
+    if (GROUP_OF.has(word)) return TERM_GROUPS[GROUP_OF.get(word)];
+    if (word.length < 5) return null;
+    let best = null, bestLen = 0;
+    for (const [t, i] of GROUP_OF) {
+      if (t.length >= 4 && word.startsWith(t) && t.length > bestLen && !TERM_GROUPS[i].includes('=' + t)) { best = i; bestLen = t.length; }
+    }
+    return best == null ? null : TERM_GROUPS[best];
+  }
+  const _tsSafe = (w) => w.replace(/[^\p{L}\p{N}]/gu, '');
+  /** Słowo z grupy -> fragment to_tsquery: „=cord” -> cord, „velours côtelé” -> (velours <-> côtelé:*), „tulle” -> tulle:* */
+  function _tsTerm(t) {
+    if (t.startsWith('=')) return _tsSafe(t.slice(1));
+    const words = t.split(/\s+/).map(_tsSafe).filter(Boolean);
+    if (!words.length) return '';
+    if (words.length === 1) return words[0] + ':*';
+    return '(' + words.slice(0, -1).join(' <-> ') + ' <-> ' + words[words.length - 1] + ':*)';
+  }
+
+  // Polskie odmiany kolorów i materiałów: rdzeń słowa -> nazwa w bazie („brązowa”, „wełniany”, „jedwabne”)
+  const STEM_ALIASES = [
+    ['brązow', 'brown'], ['brazow', 'brown'], ['czarn', 'black'], ['biał', 'white'], ['bial', 'white'],
+    ['kremow', 'cream'], ['ecru', 'cream'], ['beżow', 'beige'], ['bezow', 'beige'], ['szar', 'grey'], ['popiel', 'grey'],
+    ['niebiesk', 'blue'], ['granatow', 'blue'], ['błękit', 'blue'], ['blekit', 'blue'], ['turkusow', 'blue'],
+    ['zielon', 'green'], ['oliwkow', 'green'], ['butelkow', 'green'], ['czerwon', 'red'], ['bordow', 'red'], ['burgund', 'red'],
+    ['różow', 'pink'], ['rozow', 'pink'], ['łososiow', 'pink'], ['fioletow', 'purple'], ['liliow', 'purple'], ['śliwkow', 'purple'],
+    ['żółt', 'yellow'], ['zolt', 'yellow'], ['musztardow', 'yellow'], ['pomarańczow', 'orange'], ['pomaranczow', 'orange'],
+    ['rdzaw', 'orange'], ['złot', 'gold'], ['zlot', 'gold'], ['srebrn', 'silver'],
+    ['wełnian', 'wool'], ['welnian', 'wool'], ['bawełnian', 'cotton'], ['bawelnian', 'cotton'], ['jedwabn', 'silk'],
+    ['lnian', 'linen'], ['wiskozow', 'viscose'], ['kaszmirow', 'cashmere'], ['poliestrow', 'polyester'], ['skórzan', 'leather'],
+    ['skorzan', 'leather'], ['moherow', 'mohair'], ['alpak', 'alpaca'], ['konopn', 'hemp'],
+  ];
+  function aliasWord(w) {
+    if (WORD_ALIASES[w]) return WORD_ALIASES[w];
+    if (w.length >= 4) for (const [stem, canon] of STEM_ALIASES) if (w.startsWith(stem)) return canon;
+    return w;
+  }
+
   function searchWords(q) {
     return String(q || '').toLowerCase()
       .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
       .split(/\s+/).filter((w) => w.length >= 2).slice(0, 6)
-      .map((w) => WORD_ALIASES[w] || w);
+      .map(aliasWord);
+  }
+
+  /** Czy szukane słowa są w nazwie oferty (do kolejności „najpierw trafienia w nazwie”). */
+  function titleMatches(p, q) {
+    const words = searchWords(q);
+    if (!words.length) return false;
+    const tokens = String(p.title || '').toLowerCase().split(/[^\p{L}\p{N}]+/u);
+    const hit = (v) => tokens.some((_, i) => v.words.every((vw, k) => {
+      const t = tokens[i + k] || '';
+      return v.exact || k < v.words.length - 1 ? t === vw : t.startsWith(vw);
+    }));
+    return words.every((w) => wordVariants(w).some(hit));
+  }
+
+  /** Warianty słowa do dopasowania lokalnie (tryb podglądu): całe grupy tłumaczeń. */
+  function wordVariants(w) {
+    const g = termGroup(w);
+    return g ? g.map((t) => ({ t: t.replace(/^=/, ''), exact: t.startsWith('='), words: t.replace(/^=/, '').split(/\s+/) }))
+      : [{ t: w, exact: false, words: [w] }];
   }
 
   /** Zapytanie Postgres to_tsquery: każde słowo jako przedrostek, wszystkie naraz. */
   function tsQuery(q) {
-    const words = searchWords(q).map((w) => w.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean);
-    return words.length ? words.map((w) => w + ':*').join(' & ') : '';
+    const parts = searchWords(q).map((w) => {
+      const g = termGroup(w);
+      if (!g) { const t = _tsSafe(w); return t ? t + ':*' : ''; }
+      const alts = [...new Set(g.map(_tsTerm).filter(Boolean))];
+      return alts.length > 1 ? '(' + alts.join(' | ') + ')' : alts[0];
+    }).filter(Boolean);
+    return parts.join(' & ');
   }
 
   // --- Zapytanie do bazy (Supabase / PostgREST) -------------------------------
@@ -169,6 +286,9 @@
     if (since) p.push(['first_seen_at', 'gt.' + since]);
     const ts = tsQuery(n.q);
     if (ts) p.push(['search', 'fts(simple).' + ts]);
+    // Kolejność „najtrafniejsze”: najpierw oferty z szukanym słowem w nazwie (o.title = 'only'), potem reszta ('exclude')
+    if (ts && o.title === 'only') p.push(['title_fts', 'fts(simple).' + ts]);
+    if (ts && o.title === 'exclude') p.push(['title_fts', 'not.fts(simple).' + ts]);
     if (n.sort === 'price_asc') p.push(['order', 'price_per_m_eur.asc.nullslast,first_seen_at.desc']);
     else if (n.sort === 'price_desc') p.push(['order', 'price_per_m_eur.desc.nullslast,first_seen_at.desc']);
     else p.push(['order', 'first_seen_at.desc,id.asc']);
@@ -218,7 +338,11 @@
     if (words.length) {
       const hay = ((p.search_text || p.title || '') + ' ' + (p.fibers || []).join(' ') + ' ' + (p.colors || []).join(' ')).toLowerCase();
       const tokens = hay.split(/[^\p{L}\p{N}]+/u);
-      if (!words.every((w) => tokens.some((t) => t.startsWith(w)))) return false;
+      const hit = (v) => tokens.some((_, i) => v.words.every((vw, k) => {
+        const t = tokens[i + k] || '';
+        return v.exact || k < v.words.length - 1 ? t === vw : t.startsWith(vw);
+      }));
+      if (!words.every((w) => wordVariants(w).some(hit))) return false;
     }
     return true;
   }
@@ -398,7 +522,7 @@
   const api = {
     FIBERS, COLORS, MAX_PRICE_STEPS, MIN_WIDTH_STEPS, SORTS, PAGE_SIZE, LIST_FIELDS,
     PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS,
-    defaultFilters, normalizeFilters, countActive, filtersKey, searchWords, tsQuery,
+    defaultFilters, normalizeFilters, countActive, filtersKey, searchWords, tsQuery, termGroup, titleMatches,
     restParams, toQueryString, allowedShops, matchLocal, sortLocal,
     money, priceParts, compositionText, imageUrl,
     makeFavorites, makeAlerts, describeFilters, MAX_ALERTS,
