@@ -123,7 +123,8 @@
         .filter(([k]) => k !== 'order' && k !== 'limit' && k !== 'offset').concat([['limit', '1']]);
       const [feed, all] = await Promise.all([
         getJson('/rpc/feed?' + qs),
-        page ? Promise.resolve(null) : getJson('/products?' + R.toQueryString(countParams), { Prefer: 'count=exact' }),
+        // licznik tylko na pierwszej stronie; gdy baza jest zajęta (wgrywanie ofert), lista i tak się pokazuje
+        page ? Promise.resolve(null) : getJson('/products?' + R.toQueryString(countParams), { Prefer: 'count=exact' }).catch(() => null),
       ]);
       return { items: feed.body, total: all ? parseTotal(all.headers) : null, approx: false, hasMore: feed.body.length > 0 };
     }
