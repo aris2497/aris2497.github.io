@@ -6,5 +6,5 @@ window.REMNA_CONFIG = {
   supabaseKey: 'sb_publishable_DXRm86QQYlTACvTiDllUEQ_7-fiKEYe',
   demoUrl: 'data/demo.json',
   version: '1.0.0',
-  contactEmail: 'zakolkiem.app@gmail.com',   // adres kontaktowy (wspólny dla aplikacji właścicielki)
+  contactEmail: 'remna.app@gmail.com',   // adres kontaktowy Remny
 };
