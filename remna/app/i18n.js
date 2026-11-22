@@ -1,4 +1,5 @@
-// Remna: teksty interfejsu (PL i EN). Każdy klucz musi być w obu słownikach (pilnuje tego test).
+// Remna: teksty interfejsu. Tu PL i EN; DE, FR, IT, ES, NL w i18n-langs.js. Każdy klucz musi być we wszystkich
+// słownikach (pilnuje tego test). Domyślny język: angielski (gdy telefon/przeglądarka ma język, którego nie znamy).
 (function (root) {
   'use strict';
 
@@ -33,6 +34,12 @@
     'filters.fromStock': (v) => `min. ${v} m`,
     'filters.stockKnown': 'Tylko z podaną ilością',
     'filters.stockNote': 'Ukrywamy oferty, o których wiemy, że zostało mniej. Gdy sklep nie podaje ilości (zwykle przy sprzedaży na metry), oferta zostaje: sprawdź ją w sklepie albo włącz „Tylko z podaną ilością”.',
+    'filters.weight': 'Gramatura',
+    'filters.weight.light': 'Lekkie (do 120 g/m²)',
+    'filters.weight.medium': 'Średnie (120–250)',
+    'filters.weight.heavy': 'Ciężkie (250–400)',
+    'filters.weight.xheavy': 'Bardzo ciężkie (400+)',
+    'filters.weightNote': 'Lekkie to np. szyfon i koszulowe, średnie sukienkowe, ciężkie spodniowe i kostiumowe, bardzo ciężkie płaszczowe. Gramaturę podaje ok. jedna trzecia ofert; pozostałe nie trafiają do tych opcji.',
     'filters.pattern': 'Wzór',
     'filters.patternAny': 'Dowolny',
     'filters.patternPlain': 'Jednolite',
@@ -196,6 +203,12 @@
     'filters.fromStock': (v) => `min. ${v} m`,
     'filters.stockKnown': 'Only with known quantity',
     'filters.stockNote': 'We hide listings we know have less left. When the shop does not say how much is left (usually when sold by the metre), the listing stays: check it in the shop or turn on "Only with known quantity".',
+    'filters.weight': 'Weight',
+    'filters.weight.light': 'Light (under 120 g/m²)',
+    'filters.weight.medium': 'Medium (120–250)',
+    'filters.weight.heavy': 'Heavy (250–400)',
+    'filters.weight.xheavy': 'Very heavy (400+)',
+    'filters.weightNote': 'Light means e.g. chiffon and shirting, medium dress weight, heavy trouser and suit weight, very heavy coat weight. About a third of listings give the weight; the rest are left out of these options.',
     'filters.pattern': 'Pattern',
     'filters.patternAny': 'Any',
     'filters.patternPlain': 'Plain',
@@ -335,39 +348,58 @@
     return many;
   }
 
+  // Języki aplikacji (kolejność = lista w ustawieniach) i ich formaty liczb i dat
+  const LANGS = [
+    { code: 'en', name: 'English', locale: 'en-GB' },
+    { code: 'de', name: 'Deutsch', locale: 'de-DE' },
+    { code: 'fr', name: 'Français', locale: 'fr-FR' },
+    { code: 'it', name: 'Italiano', locale: 'it-IT' },
+    { code: 'es', name: 'Español', locale: 'es-ES' },
+    { code: 'nl', name: 'Nederlands', locale: 'nl-NL' },
+    { code: 'pl', name: 'Polski', locale: 'pl-PL' },
+  ];
+  const DEFAULT_LANG = 'en';
+  function localeOf(lang) { const l = LANGS.find((x) => x.code === lang); return l ? l.locale : 'en-GB'; }
+
   function fmtNum(n, lang) {
-    return new Intl.NumberFormat(lang === 'pl' ? 'pl-PL' : 'en-GB', { maximumFractionDigits: 1 }).format(n);
+    return new Intl.NumberFormat(localeOf(lang), { maximumFractionDigits: 1 }).format(n);
   }
 
+  // „1 oferta / 3 oferty / 5 ofert” po polsku; w pozostałych językach liczba pojedyncza i mnoga
+  const NOUNS = { en: ['listing', 'listings'], de: ['Angebot', 'Angebote'], fr: ['annonce', 'annonces'],
+    it: ['offerta', 'offerte'], es: ['oferta', 'ofertas'], nl: ['aanbieding', 'aanbiedingen'] };
   function fmtCount(n, lang) {
     const num = fmtNum(n, lang);
     if (lang === 'pl') return `${num} ${plForm(n, 'oferta', 'oferty', 'ofert')}`;
-    return `${num} ${n === 1 ? 'listing' : 'listings'}`;
+    const [one, many] = NOUNS[lang] || NOUNS.en;
+    const singular = lang === 'fr' ? n < 2 : n === 1;
+    return `${num} ${singular ? one : many}`;
   }
 
   const DICTS = { pl, en };
-  let current = 'pl';
+  let current = DEFAULT_LANG;
+  function addDict(code, dict) { DICTS[code] = dict; }
 
+  /** Pierwszy język telefonu/przeglądarki, który znamy; inaczej angielski. */
   function detectLang(nav) {
     const langs = (nav && (nav.languages || [nav.language])) || [];
     for (const l of langs) {
       const code = String(l || '').slice(0, 2).toLowerCase();
-      if (code === 'pl') return 'pl';
-      if (code) return 'en';
+      if (LANGS.some((x) => x.code === code)) return code;
     }
-    return 'pl';
+    return DEFAULT_LANG;
   }
 
-  function setLang(lang) { current = DICTS[lang] ? lang : 'pl'; return current; }
+  function setLang(lang) { current = DICTS[lang] ? lang : DEFAULT_LANG; return current; }
   function getLang() { return current; }
 
   function t(key, ...args) {
-    const v = DICTS[current][key] ?? DICTS.pl[key];
+    const v = DICTS[current][key] ?? DICTS[DEFAULT_LANG][key];
     if (v == null) return key;
     return typeof v === 'function' ? v(...args) : v;
   }
 
-  const api = { DICTS, t, setLang, getLang, detectLang, fmtCount, fmtNum, plForm };
+  const api = { DICTS, LANGS, DEFAULT_LANG, t, setLang, getLang, detectLang, fmtCount, fmtNum, plForm, localeOf, addDict };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.RemnaI18n = api;
 })(typeof window !== 'undefined' ? window : globalThis);

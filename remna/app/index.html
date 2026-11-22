@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <!-- Bez viewport-fit=cover: Capacitor sam odsuwa stronę od pasków systemowych Androida.
@@ -29,7 +29,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Remna">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="stylesheet" href="styles.css?v=2426098">
+  <link rel="stylesheet" href="styles.css?v=eaaa41f">
 </head>
 <body>
   <div id="app">
@@ -114,8 +114,13 @@
         <div class="setting">
           <label for="lang" data-i18n="more.language"></label>
           <select id="lang">
-            <option value="pl">Polski</option>
             <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="it">Italiano</option>
+            <option value="es">Español</option>
+            <option value="nl">Nederlands</option>
+            <option value="pl">Polski</option>
           </select>
         </div>
         <h2 data-i18n="more.sources"></h2>
@@ -193,11 +198,12 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
-  <script src="config.js?v=2426098"></script>
-  <script src="i18n.js?v=2426098"></script>
-  <script src="filters.js?v=2426098"></script>
-  <script src="data.js?v=2426098"></script>
-  <script src="native.js?v=2426098"></script>
-  <script src="app.js?v=2426098"></script>
+  <script src="config.js?v=eaaa41f"></script>
+  <script src="i18n.js?v=eaaa41f"></script>
+  <script src="i18n-langs.js?v=eaaa41f"></script>
+  <script src="filters.js?v=eaaa41f"></script>
+  <script src="data.js?v=eaaa41f"></script>
+  <script src="native.js?v=eaaa41f"></script>
+  <script src="app.js?v=eaaa41f"></script>
 </body>
 </html>

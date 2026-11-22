@@ -4,41 +4,41 @@
   'use strict';
 
   const FIBERS = [
-    { id: 'silk', pl: 'Jedwab', en: 'Silk' },
-    { id: 'wool', pl: 'Wełna', en: 'Wool' },
-    { id: 'cashmere', pl: 'Kaszmir', en: 'Cashmere' },
-    { id: 'cotton', pl: 'Bawełna', en: 'Cotton' },
-    { id: 'linen', pl: 'Len', en: 'Linen' },
-    { id: 'viscose', pl: 'Wiskoza', en: 'Viscose' },
-    { id: 'cupro', pl: 'Cupro', en: 'Cupro' },
-    { id: 'acetate', pl: 'Acetat', en: 'Acetate' },
-    { id: 'polyester', pl: 'Poliester', en: 'Polyester' },
-    { id: 'polyamide', pl: 'Poliamid', en: 'Polyamide' },
-    { id: 'elastane', pl: 'Elastan', en: 'Elastane' },
-    { id: 'mohair', pl: 'Moher', en: 'Mohair' },
-    { id: 'alpaca', pl: 'Alpaka', en: 'Alpaca' },
-    { id: 'hemp', pl: 'Konopie', en: 'Hemp' },
-    { id: 'acrylic', pl: 'Akryl', en: 'Acrylic' },
-    { id: 'metallic', pl: 'Lureks', en: 'Metallic' },
-    { id: 'leather', pl: 'Skóra', en: 'Leather' },
+    { id: 'silk', pl: 'Jedwab', en: 'Silk', de: 'Seide', fr: 'Soie', it: 'Seta', es: 'Seda', nl: 'Zijde' },
+    { id: 'wool', pl: 'Wełna', en: 'Wool', de: 'Wolle', fr: 'Laine', it: 'Lana', es: 'Lana', nl: 'Wol' },
+    { id: 'cashmere', pl: 'Kaszmir', en: 'Cashmere', de: 'Kaschmir', fr: 'Cachemire', it: 'Cashmere', es: 'Cachemira', nl: 'Kasjmier' },
+    { id: 'cotton', pl: 'Bawełna', en: 'Cotton', de: 'Baumwolle', fr: 'Coton', it: 'Cotone', es: 'Algodón', nl: 'Katoen' },
+    { id: 'linen', pl: 'Len', en: 'Linen', de: 'Leinen', fr: 'Lin', it: 'Lino', es: 'Lino', nl: 'Linnen' },
+    { id: 'viscose', pl: 'Wiskoza', en: 'Viscose', de: 'Viskose', fr: 'Viscose', it: 'Viscosa', es: 'Viscosa', nl: 'Viscose' },
+    { id: 'cupro', pl: 'Cupro', en: 'Cupro', de: 'Cupro', fr: 'Cupro', it: 'Cupro', es: 'Cupro', nl: 'Cupro' },
+    { id: 'acetate', pl: 'Acetat', en: 'Acetate', de: 'Acetat', fr: 'Acétate', it: 'Acetato', es: 'Acetato', nl: 'Acetaat' },
+    { id: 'polyester', pl: 'Poliester', en: 'Polyester', de: 'Polyester', fr: 'Polyester', it: 'Poliestere', es: 'Poliéster', nl: 'Polyester' },
+    { id: 'polyamide', pl: 'Poliamid', en: 'Polyamide', de: 'Polyamid', fr: 'Polyamide', it: 'Poliammide', es: 'Poliamida', nl: 'Polyamide' },
+    { id: 'elastane', pl: 'Elastan', en: 'Elastane', de: 'Elasthan', fr: 'Élasthanne', it: 'Elastan', es: 'Elastano', nl: 'Elastaan' },
+    { id: 'mohair', pl: 'Moher', en: 'Mohair', de: 'Mohair', fr: 'Mohair', it: 'Mohair', es: 'Mohair', nl: 'Mohair' },
+    { id: 'alpaca', pl: 'Alpaka', en: 'Alpaca', de: 'Alpaka', fr: 'Alpaga', it: 'Alpaca', es: 'Alpaca', nl: 'Alpaca' },
+    { id: 'hemp', pl: 'Konopie', en: 'Hemp', de: 'Hanf', fr: 'Chanvre', it: 'Canapa', es: 'Cáñamo', nl: 'Hennep' },
+    { id: 'acrylic', pl: 'Akryl', en: 'Acrylic', de: 'Acryl', fr: 'Acrylique', it: 'Acrilico', es: 'Acrílico', nl: 'Acryl' },
+    { id: 'metallic', pl: 'Lureks', en: 'Metallic', de: 'Lurex', fr: 'Lurex', it: 'Lurex', es: 'Lúrex', nl: 'Lurex' },
+    { id: 'leather', pl: 'Skóra', en: 'Leather', de: 'Leder', fr: 'Cuir', it: 'Pelle', es: 'Piel', nl: 'Leer' },
   ];
 
   const COLORS = [
-    { id: 'black', pl: 'Czarny', en: 'Black', hex: '#1c1c1e' },
-    { id: 'white', pl: 'Biały', en: 'White', hex: '#ffffff' },
-    { id: 'cream', pl: 'Kremowy', en: 'Cream', hex: '#efe6d2' },
-    { id: 'beige', pl: 'Beżowy', en: 'Beige', hex: '#cdb491' },
-    { id: 'brown', pl: 'Brązowy', en: 'Brown', hex: '#7a5134' },
-    { id: 'grey', pl: 'Szary', en: 'Grey', hex: '#8e9196' },
-    { id: 'blue', pl: 'Niebieski', en: 'Blue', hex: '#2f5fb3' },
-    { id: 'green', pl: 'Zielony', en: 'Green', hex: '#3f7f4f' },
-    { id: 'red', pl: 'Czerwony', en: 'Red', hex: '#b8312f' },
-    { id: 'pink', pl: 'Różowy', en: 'Pink', hex: '#e48aa6' },
-    { id: 'purple', pl: 'Fioletowy', en: 'Purple', hex: '#6d4b9a' },
-    { id: 'yellow', pl: 'Żółty', en: 'Yellow', hex: '#e8c23a' },
-    { id: 'orange', pl: 'Pomarańczowy', en: 'Orange', hex: '#e07a2e' },
-    { id: 'gold', pl: 'Złoty', en: 'Gold', hex: '#c9a24a' },
-    { id: 'silver', pl: 'Srebrny', en: 'Silver', hex: '#bfc3c7' },
+    { id: 'black', pl: 'Czarny', en: 'Black', de: 'Schwarz', fr: 'Noir', it: 'Nero', es: 'Negro', nl: 'Zwart', hex: '#1c1c1e' },
+    { id: 'white', pl: 'Biały', en: 'White', de: 'Weiß', fr: 'Blanc', it: 'Bianco', es: 'Blanco', nl: 'Wit', hex: '#ffffff' },
+    { id: 'cream', pl: 'Kremowy', en: 'Cream', de: 'Creme', fr: 'Crème', it: 'Panna', es: 'Crema', nl: 'Crème', hex: '#efe6d2' },
+    { id: 'beige', pl: 'Beżowy', en: 'Beige', de: 'Beige', fr: 'Beige', it: 'Beige', es: 'Beige', nl: 'Beige', hex: '#cdb491' },
+    { id: 'brown', pl: 'Brązowy', en: 'Brown', de: 'Braun', fr: 'Marron', it: 'Marrone', es: 'Marrón', nl: 'Bruin', hex: '#7a5134' },
+    { id: 'grey', pl: 'Szary', en: 'Grey', de: 'Grau', fr: 'Gris', it: 'Grigio', es: 'Gris', nl: 'Grijs', hex: '#8e9196' },
+    { id: 'blue', pl: 'Niebieski', en: 'Blue', de: 'Blau', fr: 'Bleu', it: 'Blu', es: 'Azul', nl: 'Blauw', hex: '#2f5fb3' },
+    { id: 'green', pl: 'Zielony', en: 'Green', de: 'Grün', fr: 'Vert', it: 'Verde', es: 'Verde', nl: 'Groen', hex: '#3f7f4f' },
+    { id: 'red', pl: 'Czerwony', en: 'Red', de: 'Rot', fr: 'Rouge', it: 'Rosso', es: 'Rojo', nl: 'Rood', hex: '#b8312f' },
+    { id: 'pink', pl: 'Różowy', en: 'Pink', de: 'Rosa', fr: 'Rose', it: 'Rosa', es: 'Rosa', nl: 'Roze', hex: '#e48aa6' },
+    { id: 'purple', pl: 'Fioletowy', en: 'Purple', de: 'Lila', fr: 'Violet', it: 'Viola', es: 'Morado', nl: 'Paars', hex: '#6d4b9a' },
+    { id: 'yellow', pl: 'Żółty', en: 'Yellow', de: 'Gelb', fr: 'Jaune', it: 'Giallo', es: 'Amarillo', nl: 'Geel', hex: '#e8c23a' },
+    { id: 'orange', pl: 'Pomarańczowy', en: 'Orange', de: 'Orange', fr: 'Orange', it: 'Arancione', es: 'Naranja', nl: 'Oranje', hex: '#e07a2e' },
+    { id: 'gold', pl: 'Złoty', en: 'Gold', de: 'Gold', fr: 'Or', it: 'Oro', es: 'Dorado', nl: 'Goud', hex: '#c9a24a' },
+    { id: 'silver', pl: 'Srebrny', en: 'Silver', de: 'Silber', fr: 'Argent', it: 'Argento', es: 'Plata', nl: 'Zilver', hex: '#bfc3c7' },
   ];
 
   const MAX_PRICE_STEPS = [10, 20, 40, 80, 150];   // €/m
@@ -50,13 +50,15 @@
   const MAX_SYNTHETIC_PCT = 5;
   // Ile metrów potrzebujesz: ukrywamy oferty, o których wiemy, że zostało mniej
   const MIN_STOCK_STEPS = [2, 3, 5, 10, 20];
+  // Gramatura (g/m²): przedziały, w których myślą krawcy (szyfon / sukienkowe / spodniowe / płaszczowe)
+  const WEIGHT_RANGES = { light: [0, 120], medium: [120, 250], heavy: [250, 400], xheavy: [400, null] };
   const PAGE_SIZE = 30;
 
   function defaultFilters() {
     return {
       q: '', kind: 'all', fibers: [], colors: [], maxPrice: null, minWidth: null,
       countries: [], shops: [], newDays: null, sort: 'newest',
-      purity: null, noSynthetic: false, minStock: null, stockKnown: false, pattern: null,
+      purity: null, noSynthetic: false, minStock: null, stockKnown: false, pattern: null, weight: null,
     };
   }
 
@@ -79,6 +81,7 @@
     out.minStock = MIN_STOCK_STEPS.includes(out.minStock) ? out.minStock : null;
     out.stockKnown = out.stockKnown === true;
     out.pattern = ['plain', 'patterned'].includes(out.pattern) ? out.pattern : null;
+    out.weight = Object.prototype.hasOwnProperty.call(WEIGHT_RANGES, out.weight) ? out.weight : null;
     if (!SORTS.includes(out.sort)) out.sort = 'newest';
     return out;
   }
@@ -88,7 +91,8 @@
     const n = normalizeFilters(f);
     return (n.kind !== 'all' ? 1 : 0) + n.fibers.length + n.colors.length + (n.maxPrice ? 1 : 0) +
       (n.minWidth ? 1 : 0) + n.countries.length + n.shops.length + (n.newDays ? 1 : 0) +
-      (n.purity ? 1 : 0) + (n.noSynthetic ? 1 : 0) + (n.minStock ? 1 : 0) + (n.stockKnown ? 1 : 0) + (n.pattern ? 1 : 0);
+      (n.purity ? 1 : 0) + (n.noSynthetic ? 1 : 0) + (n.minStock ? 1 : 0) + (n.stockKnown ? 1 : 0) + (n.pattern ? 1 : 0) +
+      (n.weight ? 1 : 0);
   }
 
   /** Klucz porównawczy filtrów (do alertów i pamięci podręcznej). */
@@ -280,6 +284,12 @@
     else if (n.minStock) p.push(['or', '(stock_m.is.null,stock_m.gte.' + n.minStock + ')']);
     if (n.colors.length) p.push(['colors', 'ov.{' + n.colors.join(',') + '}']);
     if (n.pattern) p.push(['pattern', 'eq.' + n.pattern]);
+    if (n.weight) {
+      const [lo, hi] = WEIGHT_RANGES[n.weight];
+      if (lo) p.push(['weight_gsm', 'gte.' + lo]);
+      if (hi) p.push(['weight_gsm', 'lt.' + hi]);
+      if (!lo && hi) p.push(['weight_gsm', 'gt.0']);
+    }
     if (n.maxPrice) p.push(['price_per_m_eur', 'lte.' + n.maxPrice]);
     if (n.minWidth) p.push(['width_cm', 'gte.' + n.minWidth]);
     const shopIds = allowedShops(n, o.shopsByCountry);
@@ -331,6 +341,11 @@
     if (n.minStock && stock != null && stock < n.minStock) return false;
     if (n.colors.length && !(p.colors || []).some((x) => n.colors.includes(x))) return false;
     if (n.pattern && p.pattern !== n.pattern) return false;
+    if (n.weight) {
+      const [lo, hi] = WEIGHT_RANGES[n.weight];
+      const g = p.weight_gsm == null ? null : Number(p.weight_gsm);
+      if (g == null || !(g > 0) || (lo && g < lo) || (hi && g >= hi)) return false;
+    }
     if (n.maxPrice && !(p.price_per_m_eur != null && p.price_per_m_eur <= n.maxPrice)) return false;
     if (n.minWidth && !(p.width_cm != null && p.width_cm >= n.minWidth)) return false;
     const shopIds = allowedShops(n, o.shopsByCountry);
@@ -377,7 +392,7 @@
 
   function money(value, currency, lang) {
     if (value == null || isNaN(value)) return '';
-    const locale = lang === 'pl' ? 'pl-PL' : 'en-GB';
+    const locale = { pl: 'pl-PL', en: 'en-GB', de: 'de-DE', fr: 'fr-FR', it: 'it-IT', es: 'es-ES', nl: 'nl-NL' }[lang] || 'en-GB';
     try {
       return new Intl.NumberFormat(locale, { style: 'currency', currency: currency || 'EUR', currencyDisplay: 'narrowSymbol', maximumFractionDigits: value < 100 ? 2 : 0 }).format(value);
     } catch (e) {
@@ -397,7 +412,7 @@
   }
 
   function compositionText(p, lang) {
-    const names = Object.fromEntries(FIBERS.map((f) => [f.id, lang === 'pl' ? f.pl : f.en]));
+    const names = Object.fromEntries(FIBERS.map((f) => [f.id, f[lang] || f.en]));
     if (p.composition && Object.keys(p.composition).length) {
       return Object.entries(p.composition)
         .sort((a, b) => b[1] - a[1])
@@ -529,29 +544,44 @@
   }
 
   /** Domyślna nazwa alertu z ustawionych filtrów, np. „Jedwab, niebieski, do 40 €/m”. */
+  // Słówka do nazw alertów (np. „Jedwab, niebieski, do 40 €/m”)
+  const DESCRIBE = {
+    pl: { leather: 'skóry', or: ' lub ', noSynth: 'bez syntetyków', plain: 'jednolite', patterned: 'wzorzyste', upTo: 'do ', width: 'szer. od ', all: 'Wszystkie nowe tkaniny', weight: { light: 'lekkie', medium: 'średnie', heavy: 'ciężkie', xheavy: 'bardzo ciężkie' } },
+    en: { leather: 'leather', or: ' or ', noSynth: 'no synthetics', plain: 'plain', patterned: 'patterned', upTo: 'up to ', width: 'width from ', all: 'All new fabrics', weight: { light: 'light', medium: 'medium weight', heavy: 'heavy', xheavy: 'very heavy' } },
+    de: { leather: 'Leder', or: ' oder ', noSynth: 'ohne Synthetik', plain: 'uni', patterned: 'gemustert', upTo: 'bis ', width: 'Breite ab ', all: 'Alle neuen Stoffe', weight: { light: 'leicht', medium: 'mittel', heavy: 'schwer', xheavy: 'sehr schwer' } },
+    fr: { leather: 'cuir', or: ' ou ', noSynth: 'sans synthétique', plain: 'uni', patterned: 'à motifs', upTo: 'jusqu’à ', width: 'laize dès ', all: 'Tous les nouveaux tissus', weight: { light: 'léger', medium: 'moyen', heavy: 'lourd', xheavy: 'très lourd' } },
+    it: { leather: 'pelle', or: ' o ', noSynth: 'senza sintetici', plain: 'tinta unita', patterned: 'fantasia', upTo: 'fino a ', width: 'altezza da ', all: 'Tutti i nuovi tessuti', weight: { light: 'leggero', medium: 'medio', heavy: 'pesante', xheavy: 'molto pesante' } },
+    es: { leather: 'piel', or: ' o ', noSynth: 'sin sintéticos', plain: 'liso', patterned: 'estampado', upTo: 'hasta ', width: 'ancho desde ', all: 'Todos los tejidos nuevos', weight: { light: 'ligero', medium: 'medio', heavy: 'pesado', xheavy: 'muy pesado' } },
+    nl: { leather: 'leer', or: ' of ', noSynth: 'zonder synthetisch', plain: 'effen', patterned: 'met dessin', upTo: 'tot ', width: 'breedte vanaf ', all: 'Alle nieuwe stoffen', weight: { light: 'licht', medium: 'gemiddeld', heavy: 'zwaar', xheavy: 'heel zwaar' } },
+  };
+
+  /** Domyślna nazwa alertu z ustawionych filtrów, np. „Jedwab, niebieski, do 40 €/m”. */
   function describeFilters(f, lang, shopsById) {
     const n = normalizeFilters(f);
-    const L = lang === 'pl' ? 'pl' : 'en';
+    const L = DESCRIBE[lang] ? lang : 'en';
+    const W = DESCRIBE[L];
     const parts = [];
     if (n.q) parts.push('„' + n.q + '”');
-    if (n.kind === 'leather') parts.push(L === 'pl' ? 'skóry' : 'leather');
-    const fiberNames = n.fibers.map((id) => FIBERS.find((f2) => f2.id === id)).filter(Boolean).map((x) => x[L].toLowerCase());
+    if (n.kind === 'leather') parts.push(W.leather);
+    const fiberNames = n.fibers.map((id) => FIBERS.find((f2) => f2.id === id)).filter(Boolean).map((x) => (x[L] || x.en).toLowerCase());
     if (n.purity && fiberNames.length) {
-      const joined = fiberNames.join(L === 'pl' ? ' lub ' : ' or ');
-      parts.push(n.purity === 100 ? '100% ' + joined : (L === 'pl' ? 'min. ' : 'min. ') + n.purity + '% ' + joined);
+      const joined = fiberNames.join(W.or);
+      parts.push(n.purity === 100 ? '100% ' + joined : 'min. ' + n.purity + '% ' + joined);
     } else parts.push(...fiberNames);
-    if (n.noSynthetic) parts.push(L === 'pl' ? 'bez syntetyków' : 'no synthetics');
-    if (n.minStock) parts.push((L === 'pl' ? 'min. ' : 'min. ') + n.minStock + ' m');
-    if (n.pattern) parts.push(n.pattern === 'plain' ? (L === 'pl' ? 'jednolite' : 'plain') : (L === 'pl' ? 'wzorzyste' : 'patterned'));
-    for (const id of n.colors) { const x = COLORS.find((c) => c.id === id); if (x) parts.push(x[L].toLowerCase()); }
-    if (n.maxPrice) parts.push((L === 'pl' ? 'do ' : 'up to ') + n.maxPrice + ' €/m');
-    if (n.minWidth) parts.push((L === 'pl' ? 'szer. od ' : 'width from ') + n.minWidth + ' cm');
+    if (n.noSynthetic) parts.push(W.noSynth);
+    if (n.minStock) parts.push('min. ' + n.minStock + ' m');
+    if (n.pattern) parts.push(n.pattern === 'plain' ? W.plain : W.patterned);
+    if (n.weight) parts.push(W.weight[n.weight]);
+    for (const id of n.colors) { const x = COLORS.find((c) => c.id === id); if (x) parts.push((x[L] || x.en).toLowerCase()); }
+    if (n.maxPrice) parts.push(W.upTo + n.maxPrice + ' €/m');
+    if (n.minWidth) parts.push(W.width + n.minWidth + ' cm');
     if (n.countries.length) parts.push(n.countries.join(', '));
     if (n.shops.length) parts.push(n.shops.map((s) => (shopsById && shopsById[s] ? shopsById[s].name : s)).join(', '));
     const text = parts.join(', ');
-    if (!text) return L === 'pl' ? 'Wszystkie nowe tkaniny' : 'All new fabrics';
+    if (!text) return W.all;
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
+
 
   // --- Sprawdzanie dostępności w sklepie (z telefonu, jedno zapytanie na otwarcie oferty) ---
   /** Adres, pod którym sklep Shopify podaje dane jednego produktu (z dostępnością). */
@@ -576,7 +606,7 @@
 
   const api = {
     FIBERS, COLORS, MAX_PRICE_STEPS, MIN_WIDTH_STEPS, SORTS, PAGE_SIZE, LIST_FIELDS,
-    PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS,
+    PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS, WEIGHT_RANGES,
     defaultFilters, normalizeFilters, countActive, filtersKey, searchWords, tsQuery, termGroup, titleMatches,
     restParams, toQueryString, allowedShops, matchLocal, sortLocal,
     money, priceParts, compositionText, imageUrl, displayTitle, filtersToParams, filtersFromParams,

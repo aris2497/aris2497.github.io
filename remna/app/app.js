@@ -63,10 +63,10 @@
   function countryName(code) { const v = t('country.' + code); return v === 'country.' + code ? code : v; }
   function fmtDate(iso) {
     if (!iso) return '';
-    try { return new Intl.DateTimeFormat(I.getLang() === 'pl' ? 'pl-PL' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)); } catch (e) { return iso.slice(0, 10); }
+    try { return new Intl.DateTimeFormat(I.localeOf(I.getLang()), { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)); } catch (e) { return iso.slice(0, 10); }
   }
   function isNew(p) { return p.first_seen_at && (Date.now() - Date.parse(p.first_seen_at)) < 3 * 86400000; }
-  function fiberName(id) { const f = R.FIBERS.find((x) => x.id === id); return f ? f[I.getLang()] : id; }
+  function fiberName(id) { const f = R.FIBERS.find((x) => x.id === id); return f ? (f[I.getLang()] || f.en) : id; }
 
   let toastTimer = null;
   function toast(msg, actionLabel, action) {
@@ -464,7 +464,7 @@
       ['all', 'fabric', 'leather'].map((k) => chip('kind', k, t('filters.kind.' + k), f.kind === k)).join('') + '</div></div>');
     const fiberIds = R.FIBERS.filter((x) => x.id !== 'leather').map((x) => x.id);
     html.push(`<div class="fgroup">${groupHead('filters.fibers', 'fibers', fiberIds, f.fibers)}<div class="chips">` +
-      R.FIBERS.filter((x) => x.id !== 'leather').map((x) => chip('fiber', x.id, x[I.getLang()], f.fibers.includes(x.id))).join('') + '</div></div>');
+      R.FIBERS.filter((x) => x.id !== 'leather').map((x) => chip('fiber', x.id, x[I.getLang()] || x.en, f.fibers.includes(x.id))).join('') + '</div></div>');
     // Skład: udział wybranego materiału i „bez syntetyków”
     const purityOff = !f.fibers.length;
     html.push(`<div class="fgroup"><h3>${esc(t('filters.composition'))}</h3>` +
@@ -480,6 +480,11 @@
       R.MIN_STOCK_STEPS.map((v) => chip('stock', v, t('filters.fromStock', v), f.minStock === v)).join('') +
       `</div><div class="chips">` + chip('stockknown', '1', t('filters.stockKnown'), f.stockKnown) +
       `</div><p class="hint">${esc(t('filters.stockNote'))}</p></div>`);
+    // Gramatura (g/m²)
+    html.push(`<div class="fgroup"><h3>${esc(t('filters.weight'))}</h3><div class="chips">` +
+      chip('weight', '', t('filters.any'), !f.weight) +
+      Object.keys(R.WEIGHT_RANGES).map((k) => chip('weight', k, t('filters.weight.' + k), f.weight === k)).join('') +
+      `</div><p class="hint">${esc(t('filters.weightNote'))}</p></div>`);
     // Wzór: jednolite / wzorzyste
     html.push(`<div class="fgroup"><h3>${esc(t('filters.pattern'))}</h3><div class="chips">` +
       chip('pattern', '', t('filters.patternAny'), !f.pattern) +
@@ -487,7 +492,7 @@
       chip('pattern', 'patterned', t('filters.patternPatterned'), f.pattern === 'patterned') +
       `</div><p class="hint">${esc(t('filters.patternNote'))}</p></div>`);
     html.push(`<div class="fgroup">${groupHead('filters.colors', 'colors', R.COLORS.map((c) => c.id), f.colors)}<div class="chips">` +
-      R.COLORS.map((c) => chip('color', c.id, c[I.getLang()], f.colors.includes(c.id), `<span class="dot" style="background:${c.hex}"></span>`)).join('') + '</div></div>');
+      R.COLORS.map((c) => chip('color', c.id, c[I.getLang()] || c.en, f.colors.includes(c.id), `<span class="dot" style="background:${c.hex}"></span>`)).join('') + '</div></div>');
     html.push(`<div class="fgroup"><h3>${esc(t('filters.maxPrice'))}</h3><div class="chips">` +
       chip('price', '', t('filters.any'), !f.maxPrice) +
       R.MAX_PRICE_STEPS.map((v) => chip('price', v, t('filters.upTo', v), f.maxPrice === v)).join('') +
@@ -541,6 +546,7 @@
     else if (b.dataset.nosynth) f.noSynthetic = !f.noSynthetic;
     else if ('stock' in b.dataset) f.minStock = b.dataset.stock ? Number(b.dataset.stock) : null;
     else if ('pattern' in b.dataset) f.pattern = b.dataset.pattern || null;
+    else if ('weight' in b.dataset) f.weight = b.dataset.weight || null;
     else if (b.dataset.stockknown) f.stockKnown = !f.stockKnown;
     else if (b.dataset.color) f.colors = toggle(f.colors, b.dataset.color);
     else if ('price' in b.dataset) f.maxPrice = b.dataset.price ? Number(b.dataset.price) : null;
