@@ -112,9 +112,45 @@
     // Którą kolejność wybrała pierwsza strona danego wyszukiwania (żeby dalsze strony jej nie zmieniały)
     const tieredFor = new Map();
 
-    /** Wyniki wyszukiwania: {items, total, approx}. */
+    /** Strona startowa bez tekstu i filtrów: po 2 najnowsze oferty z każdego sklepu na stronę (różnorodnie). */
+    const FEED_PER_SHOP = 2;
+    function isFeed(nf, since) {
+      return !nf.q && !R.countActive(nf) && nf.sort === 'newest' && !since;
+    }
+    async function searchFeed(filters, page) {
+      const qs = 'pg=' + (page || 0) + '&per_shop=' + FEED_PER_SHOP + '&select=' + encodeURIComponent(R.LIST_FIELDS);
+      const countParams = R.restParams(filters, { page: 0, shopsByCountry, select: 'id' })
+        .filter(([k]) => k !== 'order' && k !== 'limit' && k !== 'offset').concat([['limit', '1']]);
+      const [feed, all] = await Promise.all([
+        getJson('/rpc/feed?' + qs),
+        page ? Promise.resolve(null) : getJson('/products?' + R.toQueryString(countParams), { Prefer: 'count=exact' }),
+      ]);
+      return { items: feed.body, total: all ? parseTotal(all.headers) : null, approx: false, hasMore: feed.body.length > 0 };
+    }
+    function feedLocal(products, page) {
+      const byShop = new Map();
+      for (const p of R.sortLocal(products, 'newest')) {
+        if (!byShop.has(p.shop_id)) byShop.set(p.shop_id, []);
+        byShop.get(p.shop_id).push(p);
+      }
+      const start = (page || 0) * FEED_PER_SHOP;
+      const items = [];
+      for (const list of byShop.values()) items.push(...list.slice(start, start + FEED_PER_SHOP));
+      return R.sortLocal(items, 'newest');
+    }
+
+    /** Wyniki wyszukiwania: {items, total, approx, hasMore?}. */
     async function search(filters, page, since) {
       const nf = R.normalizeFilters(filters);
+      if (isFeed(nf, since)) {
+        if (mode === 'live') {
+          try { return await searchFeed(filters, page); } catch (e) { if (!e.status) throw e; /* zwykła lista niżej */ }
+        } else {
+          const all = demo.products.filter((p) => R.matchLocal(p, filters, { shopsByCountry }));
+          const items = feedLocal(all, page);
+          return { items, total: all.length, approx: false, hasMore: items.length > 0 };
+        }
+      }
       const key = R.filtersKey(filters) + '|' + nf.sort;
       const wantTiered = mode === 'live' && R.tsQuery(nf.q) && nf.sort === 'newest' && !since;
       if (wantTiered && (!page || tieredFor.get(key) !== false)) {

@@ -294,3 +294,69 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: var(--safe
 .setting.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .setting.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
 #feedback { display: inline-flex; text-decoration: none; color: inherit; }
+
+/* --- Powitanie --- */
+.intro {
+  position: relative; margin: 10px var(--gutter-r) 4px var(--gutter-l); padding: 18px 18px 16px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--radius);
+}
+.intro h2 { font: 600 21px/1.2 var(--font-display); margin: 0 34px 6px 0; }
+.intro p { margin: 0 0 8px; color: var(--muted); max-width: 70ch; }
+.intro ul { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 4px; max-width: 70ch; }
+.intro-ios { background: var(--accent-soft); color: var(--ink) !important; padding: 8px 10px; border-radius: 10px; }
+.intro-close { position: absolute; top: 8px; right: 8px; }
+.intro-go { width: auto; display: inline-flex; padding: 11px 20px; font-size: 15px; }
+
+/* ======================================================================
+   Komputer (szeroki ekran): menu u góry, oferta jako okno, filtry z boku
+   ====================================================================== */
+@media (min-width: 960px) {
+  #app { max-width: 1280px; }
+  :root { --gutter-l: 28px; --gutter-r: 28px; }
+  .view { padding-bottom: 48px; }
+  .grid { gap: 22px 18px; }
+  .top { padding-top: 18px; }
+  .brand { padding-right: 470px; }            /* miejsce na menu po prawej */
+
+  /* Menu: poziome, w prawym górnym rogu */
+  .tabs {
+    position: fixed; top: 14px; bottom: auto; left: auto; z-index: 30;
+    right: max(28px, calc((100vw - 1280px) / 2 + 28px));
+    display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); box-shadow: var(--shadow);
+  }
+  .tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; font-size: 14px; }
+  .tabs button svg { width: 19px; height: 19px; }
+  .tabs button[aria-current="page"] { background: var(--accent-soft); }
+  .tabs .badge { position: static; margin-left: 2px; }
+  .toast { bottom: 28px; }
+
+  /* Filtry: panel wysuwany z prawej */
+  .sheet {
+    top: 0; bottom: 0; left: auto; right: 0; width: 440px; max-height: none; transform: none;
+    border-radius: 20px 0 0 20px; animation: from-right .2s ease-out;
+  }
+  @keyframes from-right { from { transform: translateX(30px); opacity: 0; } }
+
+  /* Oferta: okno na środku, zdjęcie po lewej, opis po prawej */
+  .detail {
+    inset: 5vh max(4vw, calc((100vw - 1120px) / 2)); border-radius: 22px; overflow: hidden;
+    box-shadow: 0 0 0 100vmax rgb(10 11 14 / 50%), 0 20px 60px rgb(0 0 0 / 30%);
+    animation: fade .18s ease-out;
+  }
+  @keyframes fade { from { opacity: 0; } }
+  .detail-scroll { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+  .detail-hero { position: sticky; top: 0; height: calc(90vh - 72px); max-height: none; aspect-ratio: auto; }
+  .detail-hero img { object-fit: cover; }
+  .detail-main { padding: 28px 30px 28px; margin: 0; max-width: none; }
+  .detail-close { position: absolute; top: 14px; right: 14px; }
+  .detail-foot { padding: 12px 30px; justify-content: flex-end; }
+  .detail-foot .primary-btn { flex: 0 1 360px; }
+}
+@media (min-width: 1200px) {
+  .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) and (max-width: 1150px) {
+  .tagline { display: none; }
+  .brand { padding-right: 440px; }
+}

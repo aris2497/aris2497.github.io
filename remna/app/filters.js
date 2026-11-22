@@ -408,6 +408,57 @@
     return '';
   }
 
+  /** Filtry jako parametry adresu (tylko różne od domyślnych), np. ?q=sztruks&colors=brown&pattern=plain */
+  function filtersToParams(f) {
+    const n = normalizeFilters(f);
+    const d = defaultFilters();
+    const out = [];
+    for (const k of Object.keys(d)) {
+      const v = n[k];
+      if (Array.isArray(v)) { if (v.length) out.push([k, v.join(',')]); }
+      else if (typeof v === 'boolean') { if (v) out.push([k, '1']); }
+      else if (v != null && v !== d[k] && v !== '') out.push([k, String(v)]);
+    }
+    return out;
+  }
+  /** Odwrotnie: parametry adresu -> filtry (null = w adresie nie ma żadnego filtra) */
+  function filtersFromParams(params) {
+    const d = defaultFilters();
+    const f = {};
+    let any = false;
+    for (const k of Object.keys(d)) {
+      if (!params.has(k)) continue;
+      any = true;
+      const raw = params.get(k);
+      if (Array.isArray(d[k])) f[k] = raw.split(',').filter(Boolean);
+      else if (typeof d[k] === 'boolean') f[k] = raw === '1' || raw === 'true';
+      else if (/^\d+(\.\d+)?$/.test(raw) && k !== 'q') f[k] = Number(raw);
+      else f[k] = raw;
+    }
+    return any ? normalizeFilters(f) : null;
+  }
+
+  /**
+   * Nazwa do wyświetlenia: „CREPE SATINÉ MOTIF LÉOPARD” -> „Crepe satiné motif léopard”.
+   * Tylko gdy nazwa jest cała wielkimi literami; kody z cyframi („T26A16561”, „M8”) zostają bez zmian.
+   */
+  function displayTitle(title) {
+    const t = String(title || '').trim();
+    const letters = t.replace(/[^\p{L}]/gu, '');
+    const upper = letters.replace(/[^\p{Lu}]/gu, '').length;
+    if (letters.length < 6 || upper / letters.length < 0.75) return t;   // np. „(Chute) VELOURS DE COTON” też
+    let first = true;
+    return t.split(/(\s+)/).map((w) => {
+      if (/^\s+$/.test(w) || /\d/.test(w)) return w;
+      const lower = w.toLocaleLowerCase('fr');
+      if (first && /\p{L}/u.test(w)) {
+        first = false;
+        return lower.replace(/\p{L}/u, (c) => c.toLocaleUpperCase('fr'));
+      }
+      return lower;
+    }).join('');
+  }
+
   function imageUrl(url, width) {
     if (!url) return '';
     if (/cdn\.shopify\.com|\/cdn\/shop\//.test(url)) {
@@ -528,7 +579,7 @@
     PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS,
     defaultFilters, normalizeFilters, countActive, filtersKey, searchWords, tsQuery, termGroup, titleMatches,
     restParams, toQueryString, allowedShops, matchLocal, sortLocal,
-    money, priceParts, compositionText, imageUrl,
+    money, priceParts, compositionText, imageUrl, displayTitle, filtersToParams, filtersFromParams,
     makeFavorites, makeAlerts, describeFilters, MAX_ALERTS,
     liveCheckUrl, readLiveCheck,
   };

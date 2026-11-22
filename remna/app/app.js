@@ -39,7 +39,27 @@
   function loadFilters() {
     try { return R.normalizeFilters(JSON.parse(storage.getItem('remna-filtry'))); } catch (e) { return R.defaultFilters(); }
   }
-  function saveFilters() { storage.setItem('remna-filtry', JSON.stringify(state.filters)); }
+  function saveFilters() { storage.setItem('remna-filtry', JSON.stringify(state.filters)); syncUrl(); }
+
+  // --- Adres strony: wyszukiwanie i oferta do udostępnienia (tylko wersja webowa) ---------
+  const WEB = !N.isNative && window.history && window.URLSearchParams;
+  function pageUrl(extra) {
+    const params = new URLSearchParams();
+    for (const [k, v] of R.filtersToParams(state.filters)) params.set(k, v);
+    for (const [k, v] of Object.entries(extra || {})) params.set(k, v);
+    const qs = params.toString();
+    return location.pathname + (qs ? '?' + qs : '');
+  }
+  function syncUrl() {
+    if (!WEB) return;
+    const extra = state.detailId ? { o: state.detailId } : {};
+    try { history.replaceState(history.state, '', pageUrl(extra)); } catch (e) { /* np. podgląd z pliku */ }
+  }
+  /** Link do oferty, którym można się podzielić (zawsze adres wersji webowej). */
+  function offerLink(id) {
+    const base = window.REMNA_CONFIG.webUrl || (location.origin + location.pathname);
+    return base + '?o=' + encodeURIComponent(id);
+  }
   function countryName(code) { const v = t('country.' + code); return v === 'country.' + code ? code : v; }
   function fmtDate(iso) {
     if (!iso) return '';
@@ -156,7 +176,7 @@
       state.items = reset ? res.items : state.items.concat(res.items);
       state.total = res.total;
       state.approx = res.approx && res.total != null && res.total > 1000;
-      state.hasMore = res.items.length === R.PAGE_SIZE;
+      state.hasMore = res.hasMore != null ? res.hasMore : res.items.length === R.PAGE_SIZE;
     } catch (e) {
       if (seq !== state.seq) return;
       state.error = true;
@@ -196,13 +216,13 @@
       : `<span class="noimg">Remna</span>`;
     const gone = (o.gone || liveGone(p.id)) ? `<span class="flag gone">${esc(t('fav.gone'))}</span>` : (isNew(p) ? `<span class="flag">${esc(t('card.new'))}</span>` : '');
     const label = labelLine(p);
-    return `<article class="card" data-id="${esc(p.id)}" tabindex="0" aria-label="${esc(p.title)}">
+    return `<article class="card" data-id="${esc(p.id)}" tabindex="0" aria-label="${esc(R.displayTitle(p.title))}">
       <div class="ph">${img}${gone}
         <button type="button" class="fav" data-fav="${esc(p.id)}" aria-pressed="${favorites.has(p.id)}" aria-label="${esc(t('detail.save'))}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
         </button>
       </div>
-      <div class="title">${esc(p.title)}</div>
+      <div class="title">${esc(R.displayTitle(p.title))}</div>
       <div class="price">${price}</div>
       <div class="shop">${esc(shop ? shop.name : p.shop_id)}${shop && shop.country ? ' · ' + esc(countryName(shop.country)) : ''}</div>
       ${label ? `<div class="label">${esc(label)}</div>` : ''}
@@ -313,7 +333,11 @@
       if (state.view === 'favorites') renderFavorites();
     }
   }
-  async function openDetail(id) {
+  async function openDetail(id, opts) {
+    const o = opts || {};
+    if (WEB && !o.fromHistory) {
+      try { history[o.replace ? 'replaceState' : 'pushState']({ o: id }, '', pageUrl({ o: id })); } catch (e) { /* bez historii */ }
+    }
     const quick = state.items.find((x) => x.id === id) || favorites.list().find((x) => x.id === id);
     source.track('detail', { product_id: id, shop_id: id.split(':')[0] });
     state.detailId = id;
@@ -367,7 +391,7 @@
       <div class="detail-hero">${img}</div>
       <div class="detail-main">
         <div>
-          <h1>${esc(p.title)}</h1>
+          <h1>${esc(R.displayTitle(p.title))}</h1>
           <div class="detail-shop">${shop ? esc(shop.name) : ''}</div>
         </div>
         <p class="live" id="detail-live" role="status" hidden></p>
@@ -381,12 +405,36 @@
     $('#detail-body').scrollTop = 0;
     renderLive(p.id);
   }
-  function closeDetail() {
+  function closeDetail(opts) {
+    const wasOpen = !$('#detail').hidden;
     $('#detail').hidden = true;
     document.body.style.overflow = '';
     state.detailId = null;
+    if (WEB && wasOpen && !(opts && opts.fromHistory)) {
+      if (history.state && history.state.o) history.back();   // wraca do listy (popstate niżej nic już nie robi)
+      else syncUrl();
+    }
   }
-  $('#detail-close').addEventListener('click', closeDetail);
+  $('#detail-close').addEventListener('click', () => closeDetail());
+  if (WEB) {
+    window.addEventListener('popstate', (e) => {
+      const id = e.state && e.state.o;
+      if (!id && !$('#detail').hidden) closeDetail({ fromHistory: true });
+      else if (id && $('#detail').hidden) openDetail(id, { fromHistory: true });
+    });
+  }
+  // Udostępnij: systemowe okno udostępniania (telefon) albo skopiowanie linku
+  $('#detail-share').addEventListener('click', async () => {
+    if (!detailProduct) return;
+    const url = offerLink(detailProduct.id);
+    const title = R.displayTitle(detailProduct.title);
+    source.track('share', { product_id: detailProduct.id, shop_id: detailProduct.shop_id });
+    if (navigator.share) {
+      try { await navigator.share({ title, text: t('share.text', title), url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(url); toast(t('toast.linkCopied')); }
+    catch (e) { window.prompt(t('share.copyPrompt'), url); }
+  });
   $('#detail-fav').addEventListener('click', () => { if (detailProduct) toggleFavorite(slim(detailProduct)); });
   $('#detail-open').addEventListener('click', (e) => {
     e.preventDefault();
@@ -689,7 +737,7 @@
 
   // Wstecz (Android) i Esc (komputer)
   function handleBack() {
-    if (!$('#detail').hidden) { closeDetail(); return true; }
+    if (!$('#detail').hidden) { closeDetail(); return true; }   // (na Androidzie: przycisk wstecz)
     if (!$('#filters-sheet').hidden) { closeFilters(); return true; }
     if (state.view !== 'search') { switchView('search'); return true; }
     return false;
@@ -758,6 +806,21 @@
   })();
 
   // --- Start ----------------------------------------------------------------------
+  // --- Powitanie (pierwsza wizyta) -----------------------------------------------------
+  function showIntro() {
+    if (storage.getItem('remna-powitanie')) return;
+    const ua = navigator.userAgent || '';
+    const iosSafari = /iPhone|iPad|iPod/.test(ua) && !window.navigator.standalone && !N.isNative;
+    $('#intro-ios').hidden = !iosSafari;
+    $('#intro').hidden = false;
+  }
+  function hideIntro() {
+    storage.setItem('remna-powitanie', '1');
+    $('#intro').hidden = true;
+  }
+  $('#intro-close').addEventListener('click', hideIntro);
+  $('#intro-go').addEventListener('click', () => { hideIntro(); $('#q').focus(); });
+
   async function start() {
     I.setLang(storage.getItem('remna-jezyk') || I.detectLang(navigator));
     applyI18n();
@@ -777,7 +840,17 @@
       return;
     }
     renderModeBanner();
+    showIntro();
+    // Link z filtrami (?q=…&colors=…) albo do oferty (?o=…)
+    let openId = null;
+    if (WEB) {
+      const params = new URLSearchParams(location.search);
+      const fromUrl = R.filtersFromParams(params);
+      if (fromUrl) { state.filters = fromUrl; $('#q').value = fromUrl.q || ''; renderQuick(); renderFilterBadge(); $('#sort').value = fromUrl.sort; }
+      openId = params.get('o');
+    }
     await runSearch(true);
+    if (openId) openDetail(openId, { replace: true });
     checkAlerts();
   }
   start();

@@ -7,4 +7,5 @@ window.REMNA_CONFIG = {
   demoUrl: 'data/demo.json',
   version: '1.0.0',
   contactEmail: 'remna.app@gmail.com',   // adres kontaktowy Remny
+  webUrl: 'https://aris2497.github.io/remna/app/',   // adres wersji webowej (linki do udostępniania)
 };
