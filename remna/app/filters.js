@@ -52,13 +52,29 @@
   const MIN_STOCK_STEPS = [2, 3, 5, 10, 20];
   // Gramatura (g/m²): przedziały, w których myślą krawcy (szyfon / sukienkowe / spodniowe / płaszczowe)
   const WEIGHT_RANGES = { light: [0, 120], medium: [120, 250], heavy: [250, 400], xheavy: [400, null] };
+  const WEIGHT_SLIDER_MAX = 600;   // suwak 0–600 g/m²; 600 = „600 i więcej” (bez górnej granicy)
+  const WEIGHT_STEP = 10;
+  /** Gotowy przedział pasujący do zakresu od–do (np. 'medium') albo null, gdy zakres jest własny. */
+  function weightPreset(min, max) {
+    for (const [k, [lo, hi]] of Object.entries(WEIGHT_RANGES)) {
+      if ((min || 0) === lo && (max == null ? null : max) === hi) return k;
+    }
+    return null;
+  }
+  /** Opis zakresu bez słów (działa w każdym języku): „120–250 g/m²”, „400+ g/m²”, „< 120 g/m²”. */
+  function weightLabel(min, max) {
+    if (min && max) return `${min}–${max} g/m²`;
+    if (min) return `${min}+ g/m²`;
+    if (max) return `< ${max} g/m²`;
+    return '';
+  }
   const PAGE_SIZE = 30;
 
   function defaultFilters() {
     return {
       q: '', kind: 'all', fibers: [], colors: [], maxPrice: null, minWidth: null,
       countries: [], shops: [], newDays: null, sort: 'newest',
-      purity: null, noSynthetic: false, minStock: null, stockKnown: false, pattern: null, weight: null,
+      purity: null, noSynthetic: false, minStock: null, stockKnown: false, pattern: null, weightMin: null, weightMax: null,
     };
   }
 
@@ -81,7 +97,20 @@
     out.minStock = MIN_STOCK_STEPS.includes(out.minStock) ? out.minStock : null;
     out.stockKnown = out.stockKnown === true;
     out.pattern = ['plain', 'patterned'].includes(out.pattern) ? out.pattern : null;
-    out.weight = Object.prototype.hasOwnProperty.call(WEIGHT_RANGES, out.weight) ? out.weight : null;
+    // Gramatura od–do (g/m²). Starsze alerty i linki mają jeszcze „weight: 'medium'”: zamieniamy na zakres.
+    if (out.weight && Object.prototype.hasOwnProperty.call(WEIGHT_RANGES, out.weight)) {
+      const [lo, hi] = WEIGHT_RANGES[out.weight];
+      out.weightMin = lo || null;
+      out.weightMax = hi;
+    }
+    delete out.weight;
+    const wnum = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) / WEIGHT_STEP) * WEIGHT_STEP);
+    out.weightMin = wnum(out.weightMin);
+    out.weightMax = wnum(out.weightMax);
+    if (!(out.weightMin > 0)) out.weightMin = null;
+    if (out.weightMin != null && out.weightMin >= WEIGHT_SLIDER_MAX) out.weightMin = WEIGHT_SLIDER_MAX - WEIGHT_STEP;
+    if (!(out.weightMax > 0) || out.weightMax >= WEIGHT_SLIDER_MAX) out.weightMax = null;
+    if (out.weightMin != null && out.weightMax != null && out.weightMax <= out.weightMin) out.weightMax = null;
     if (!SORTS.includes(out.sort)) out.sort = 'newest';
     return out;
   }
@@ -92,7 +121,7 @@
     return (n.kind !== 'all' ? 1 : 0) + n.fibers.length + n.colors.length + (n.maxPrice ? 1 : 0) +
       (n.minWidth ? 1 : 0) + n.countries.length + n.shops.length + (n.newDays ? 1 : 0) +
       (n.purity ? 1 : 0) + (n.noSynthetic ? 1 : 0) + (n.minStock ? 1 : 0) + (n.stockKnown ? 1 : 0) + (n.pattern ? 1 : 0) +
-      (n.weight ? 1 : 0);
+      (n.weightMin != null || n.weightMax != null ? 1 : 0);
   }
 
   /** Klucz porównawczy filtrów (do alertów i pamięci podręcznej). */
@@ -284,11 +313,9 @@
     else if (n.minStock) p.push(['or', '(stock_m.is.null,stock_m.gte.' + n.minStock + ')']);
     if (n.colors.length) p.push(['colors', 'ov.{' + colorsWithNear(n.colors).join(',') + '}']);
     if (n.pattern) p.push(['pattern', 'eq.' + n.pattern]);
-    if (n.weight) {
-      const [lo, hi] = WEIGHT_RANGES[n.weight];
-      if (lo) p.push(['weight_gsm', 'gte.' + lo]);
-      if (hi) p.push(['weight_gsm', 'lt.' + hi]);
-      if (!lo && hi) p.push(['weight_gsm', 'gt.0']);
+    if (n.weightMin != null || n.weightMax != null) {
+      p.push(['weight_gsm', n.weightMin != null ? 'gte.' + n.weightMin : 'gt.0']);
+      if (n.weightMax != null) p.push(['weight_gsm', 'lt.' + n.weightMax]);
     }
     if (n.maxPrice) p.push(['price_per_m_eur', 'lte.' + n.maxPrice]);
     if (n.minWidth) p.push(['width_cm', 'gte.' + n.minWidth]);
@@ -341,10 +368,9 @@
     if (n.minStock && stock != null && stock < n.minStock) return false;
     if (n.colors.length && !(p.colors || []).some((x) => colorsWithNear(n.colors).includes(x))) return false;
     if (n.pattern && p.pattern !== n.pattern) return false;
-    if (n.weight) {
-      const [lo, hi] = WEIGHT_RANGES[n.weight];
+    if (n.weightMin != null || n.weightMax != null) {
       const g = p.weight_gsm == null ? null : Number(p.weight_gsm);
-      if (g == null || !(g > 0) || (lo && g < lo) || (hi && g >= hi)) return false;
+      if (g == null || !(g > 0) || (n.weightMin != null && g < n.weightMin) || (n.weightMax != null && g >= n.weightMax)) return false;
     }
     if (n.maxPrice && !(p.price_per_m_eur != null && p.price_per_m_eur <= n.maxPrice)) return false;
     if (n.minWidth && !(p.width_cm != null && p.width_cm >= n.minWidth)) return false;
@@ -458,6 +484,7 @@
       else if (/^\d+(\.\d+)?$/.test(raw) && k !== 'q') f[k] = Number(raw);
       else f[k] = raw;
     }
+    if (params.has('weight')) { any = true; f.weight = params.get('weight'); }   // starsze linki
     return any ? normalizeFilters(f) : null;
   }
 
@@ -579,7 +606,10 @@
     if (n.noSynthetic) parts.push(W.noSynth);
     if (n.minStock) parts.push('min. ' + n.minStock + ' m');
     if (n.pattern) parts.push(n.pattern === 'plain' ? W.plain : W.patterned);
-    if (n.weight) parts.push(W.weight[n.weight]);
+    if (n.weightMin != null || n.weightMax != null) {
+      const preset = weightPreset(n.weightMin, n.weightMax);
+      parts.push(preset ? W.weight[preset] : weightLabel(n.weightMin, n.weightMax));
+    }
     for (const id of n.colors) { const x = COLORS.find((c) => c.id === id); if (x) parts.push((x[L] || x.en).toLowerCase()); }
     if (n.maxPrice) parts.push(W.upTo + n.maxPrice + ' €/m');
     if (n.minWidth) parts.push(W.width + n.minWidth + ' cm');
@@ -615,6 +645,7 @@
   const api = {
     FIBERS, COLORS, MAX_PRICE_STEPS, MIN_WIDTH_STEPS, SORTS, PAGE_SIZE, LIST_FIELDS,
     PURITY_STEPS, SYNTHETIC, MAX_SYNTHETIC_PCT, syntheticShare, MIN_STOCK_STEPS, WEIGHT_RANGES, colorsWithNear,
+    WEIGHT_SLIDER_MAX, WEIGHT_STEP, weightPreset, weightLabel,
     defaultFilters, normalizeFilters, countActive, filtersKey, searchWords, tsQuery, termGroup, titleMatches,
     restParams, toQueryString, allowedShops, matchLocal, sortLocal,
     money, priceParts, compositionText, imageUrl, displayTitle, filtersToParams, filtersFromParams,

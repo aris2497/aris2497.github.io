@@ -457,6 +457,32 @@
       `${esc(t(all ? 'filters.selectNone' : 'filters.selectAll'))}</button></div>`;
   }
 
+  // Suwak gramatury: przesuwanie nie przerysowuje arkusza (żeby nie zgubić uchwytu), tylko podpis i wypełnienie
+  let weightCustomOpen = false;
+  function syncWeightSlider(changed) {
+    const lo = $('#weight-min'), hi = $('#weight-max');
+    if (!lo || !hi) return;
+    const W_MAX = R.WEIGHT_SLIDER_MAX, STEP = R.WEIGHT_STEP;
+    let a = Number(lo.value), b = Number(hi.value);
+    if (a > b - STEP) { if (changed === lo) a = b - STEP; else b = a + STEP; }
+    a = Math.max(0, a); b = Math.min(W_MAX, b);
+    lo.value = a; hi.value = b;
+    $('#weight-fill').style.left = (a / W_MAX * 100) + '%';
+    $('#weight-fill').style.right = ((W_MAX - b) / W_MAX * 100) + '%';
+    const min = a > 0 ? a : null, max = b < W_MAX ? b : null;
+    $('#weight-label').textContent = R.weightLabel(min, max) || ('0–' + W_MAX + '+ g/m²');
+    // na wierzchu ten uchwyt, którym ostatnio ruszano (gdy oba są w jednym miejscu)
+    lo.style.zIndex = changed === lo ? 3 : 2; hi.style.zIndex = changed === hi ? 3 : 2;
+    return { min, max };
+  }
+  $('#filters-body').addEventListener('input', (e) => {
+    if (e.target.id !== 'weight-min' && e.target.id !== 'weight-max') return;
+    const r = syncWeightSlider(e.target);
+    state.draft.weightMin = r.min;
+    state.draft.weightMax = r.max;
+    updateApplyCount();
+  });
+
   function renderFilterSheet() {
     const f = state.draft;
     const countries = Object.keys(source.shopsByCountry).sort((a, b) => countryName(a).localeCompare(countryName(b)));
@@ -481,11 +507,26 @@
       R.MIN_STOCK_STEPS.map((v) => chip('stock', v, t('filters.fromStock', v), f.minStock === v)).join('') +
       `</div><div class="chips">` + chip('stockknown', '1', t('filters.stockKnown'), f.stockKnown) +
       `</div><p class="hint">${esc(t('filters.stockNote'))}</p></div>`);
-    // Gramatura (g/m²)
-    html.push(`<div class="fgroup"><h3>${esc(t('filters.weight'))}</h3><div class="chips">` +
-      chip('weight', '', t('filters.any'), !f.weight) +
-      Object.keys(R.WEIGHT_RANGES).map((k) => chip('weight', k, t('filters.weight.' + k), f.weight === k)).join('') +
-      `</div><p class="hint">${esc(t('filters.weightNote'))}</p></div>`);
+    // Gramatura (g/m²): gotowe przedziały albo własny zakres suwakiem
+    const wSet = f.weightMin != null || f.weightMax != null;
+    const wPreset = R.weightPreset(f.weightMin, f.weightMax);
+    const wCustom = weightCustomOpen || (wSet && !wPreset);
+    const W_MAX = R.WEIGHT_SLIDER_MAX;
+    html.push(`<div class="fgroup" id="weight-group"><h3>${esc(t('filters.weight'))}</h3><div class="chips">` +
+      chip('weight', '', t('filters.any'), !wSet && !weightCustomOpen) +
+      Object.keys(R.WEIGHT_RANGES).map((k) => chip('weight', k, t('filters.weight.' + k), !wCustom && wPreset === k)).join('') +
+      chip('weight', 'custom', t('filters.weight.custom'), wCustom) +
+      `</div>` +
+      (wCustom ? `<div class="wrange-box">
+        <div class="wrange-label" id="weight-label">${esc(R.weightLabel(f.weightMin, f.weightMax) || '0–' + W_MAX + '+ g/m²')}</div>
+        <div class="wrange">
+          <div class="wtrack"><div class="wfill" id="weight-fill"></div></div>
+          <input type="range" id="weight-min" min="0" max="${W_MAX}" step="${R.WEIGHT_STEP}" value="${f.weightMin || 0}" aria-label="${esc(t('filters.weightMinAria'))}">
+          <input type="range" id="weight-max" min="0" max="${W_MAX}" step="${R.WEIGHT_STEP}" value="${f.weightMax == null ? W_MAX : f.weightMax}" aria-label="${esc(t('filters.weightMaxAria'))}">
+        </div>
+        <div class="wrange-scale"><span>0</span><span>200</span><span>400</span><span>${W_MAX}+</span></div>
+      </div>` : '') +
+      `<p class="hint">${esc(t('filters.weightNote'))}</p></div>`);
     // Wzór: jednolite / wzorzyste
     html.push(`<div class="fgroup"><h3>${esc(t('filters.pattern'))}</h3><div class="chips">` +
       chip('pattern', '', t('filters.patternAny'), !f.pattern) +
@@ -512,6 +553,7 @@
     html.push(`<div class="fgroup">${groupHead('filters.shops', 'shops', source.shops.map((s) => s.id), f.shops)}<div class="chips">` +
       source.shops.map((s) => chip('shop', s.id, s.name, f.shops.includes(s.id))).join('') + '</div></div>');
     $('#filters-body').innerHTML = html.join('');
+    syncWeightSlider(null);
     updateApplyCount();
   }
 
@@ -548,7 +590,12 @@
     else if (b.dataset.nosynth) f.noSynthetic = !f.noSynthetic;
     else if ('stock' in b.dataset) f.minStock = b.dataset.stock ? Number(b.dataset.stock) : null;
     else if ('pattern' in b.dataset) f.pattern = b.dataset.pattern || null;
-    else if ('weight' in b.dataset) f.weight = b.dataset.weight || null;
+    else if ('weight' in b.dataset) {
+      const k = b.dataset.weight;
+      if (k === 'custom') { weightCustomOpen = true; }
+      else if (!k) { f.weightMin = null; f.weightMax = null; weightCustomOpen = false; }
+      else { const [lo, hi] = R.WEIGHT_RANGES[k]; f.weightMin = lo || null; f.weightMax = hi; weightCustomOpen = false; }
+    }
     else if (b.dataset.stockknown) f.stockKnown = !f.stockKnown;
     else if (b.dataset.color) f.colors = toggle(f.colors, b.dataset.color);
     else if ('price' in b.dataset) f.maxPrice = b.dataset.price ? Number(b.dataset.price) : null;
@@ -563,6 +610,7 @@
   });
 
   function openFilters() {
+    weightCustomOpen = false;
     state.draft = R.normalizeFilters(Object.assign({}, state.filters, { q: $('#q').value }));
     renderFilterSheet();
     $('#filters-backdrop').hidden = false;
